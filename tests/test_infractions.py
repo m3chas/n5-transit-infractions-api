@@ -2,6 +2,7 @@ import unittest
 from app import create_app, db
 from app.models import Infraction, Vehicle, Officer, Person
 import json
+from flask_jwt_extended import create_access_token
 
 class InfractionApiTestCase(unittest.TestCase):
 
@@ -22,8 +23,8 @@ class InfractionApiTestCase(unittest.TestCase):
         db.session.add(self.officer)
         db.session.commit()
 
-        # Generate token for authentication (mock implementation)
-        self.token = 'Bearer test_token'
+        # Generate token for authentication
+        self.token = 'Bearer ' + create_access_token(identity=self.officer.id)
 
     def tearDown(self):
         """Tear down test variables."""
@@ -54,6 +55,35 @@ class InfractionApiTestCase(unittest.TestCase):
         self.assertIsNotNone(infraction)
         self.assertEqual(infraction.comments, "Speeding")
         self.assertEqual(infraction.officer_id, self.officer.id)
+    
+    def test_generate_report(self):
+        """Test generating a report of infractions for a person via API."""
+        # Create test data.
+        infraction_data = {
+            "placa_patente": "ABC123",
+            "timestamp": "2024-07-06T10:00:00",
+            "comentarios": "Speeding"
+        }
+
+        self.client().post(
+            '/api/cargar_infraccion',
+            headers={'Authorization': self.token},
+            data=json.dumps(infraction_data),
+            content_type='application/json'
+        )
+
+        # Send request to get infractions.
+        response = self.client().get(
+            '/api/generar_informe',
+            query_string={'email': 'jane.doe@example.com'}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(len(data['infractions']), 1)
+        self.assertEqual(data['infractions'][0]['license_plate'], 'ABC123')
+        self.assertEqual(data['infractions'][0]['comments'], 'Speeding')
+
 
 if __name__ == "__main__":
     unittest.main()
