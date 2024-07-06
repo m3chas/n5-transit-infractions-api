@@ -58,7 +58,7 @@ class InfractionApiTestCase(unittest.TestCase):
     
     def test_generate_report(self):
         """Test generating a report of infractions for a person via API."""
-        # Create test data.
+        # Add test data
         infraction_data = {
             "placa_patente": "ABC123",
             "timestamp": "2024-07-06T10:00:00",
@@ -72,7 +72,7 @@ class InfractionApiTestCase(unittest.TestCase):
             content_type='application/json'
         )
 
-        # Send request to get infractions.
+        # Send request to get the report
         response = self.client().get(
             '/api/generar_informe',
             query_string={'email': 'jane.doe@example.com'}
@@ -83,7 +83,6 @@ class InfractionApiTestCase(unittest.TestCase):
         self.assertEqual(len(data['infractions']), 1)
         self.assertEqual(data['infractions'][0]['license_plate'], 'ABC123')
         self.assertEqual(data['infractions'][0]['comments'], 'Speeding')
-
 
 if __name__ == "__main__":
     unittest.main()
