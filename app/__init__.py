@@ -11,12 +11,11 @@ db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
 
-def create_app():
+def create_app(config_name='default'):
     app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://n5_test:n5_test_password@db/n5_test_db')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'n5_jwt_secret')
-    
+    from config.config import config
+    app.config.from_object(config[config_name])
+
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
