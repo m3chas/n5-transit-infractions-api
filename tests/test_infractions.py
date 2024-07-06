@@ -3,6 +3,7 @@ from app import create_app, db
 from app.models import Infraction, Vehicle, Officer, Person
 import json
 from flask_jwt_extended import create_access_token
+from datetime import datetime
 
 class InfractionApiTestCase(unittest.TestCase):
 
@@ -16,9 +17,11 @@ class InfractionApiTestCase(unittest.TestCase):
 
         # Add test data
         self.person = Person(name='Jane Doe', email='jane.doe@example.com')
-        self.vehicle = Vehicle(license_plate='ABC123', brand='Toyota', color='Red', owner=self.person)
-        self.officer = Officer(name='John Doe', badge_number='12345')
         db.session.add(self.person)
+        db.session.commit()  # Commit to generate an ID for the person
+
+        self.vehicle = Vehicle(license_plate='ABC123', brand='Toyota', color='Red', owner_id=self.person.id)
+        self.officer = Officer(name='John Doe', email='john.doe@example.com', password='password123')
         db.session.add(self.vehicle)
         db.session.add(self.officer)
         db.session.commit()
@@ -36,14 +39,14 @@ class InfractionApiTestCase(unittest.TestCase):
         """Test creating an infraction via API."""
         infraction_data = {
             "placa_patente": "ABC123",
-            "timestamp": "2024-07-06T10:00:00",
+            "timestamp": datetime.fromisoformat("2024-07-06T10:00:00"),
             "comentarios": "Speeding"
         }
 
         response = self.client().post(
             '/api/cargar_infraccion',
             headers={'Authorization': self.token},
-            data=json.dumps(infraction_data),
+            data=json.dumps(infraction_data, default=str),
             content_type='application/json'
         )
 
@@ -55,6 +58,6 @@ class InfractionApiTestCase(unittest.TestCase):
         self.assertIsNotNone(infraction)
         self.assertEqual(infraction.comments, "Speeding")
         self.assertEqual(infraction.officer_id, self.officer.id)
-    
+
 if __name__ == "__main__":
     unittest.main()
