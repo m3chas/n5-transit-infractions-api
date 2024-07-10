@@ -6,4 +6,3 @@ class VehicleSchema(Schema):
     brand = fields.Str(required=True)
     color = fields.Str(required=True)
     owner_id = fields.Int(required=True)
-    owner = fields.Nested("PersonSchema", exclude=("vehicles",))

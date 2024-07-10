@@ -4,6 +4,7 @@ from app.models import Infraction, Vehicle, Officer, Person
 import json
 from flask_jwt_extended import create_access_token
 from datetime import datetime
+from werkzeug.security import generate_password_hash
 
 class InfractionApiTestCase(unittest.TestCase):
 
@@ -18,16 +19,22 @@ class InfractionApiTestCase(unittest.TestCase):
         # Add test data
         self.person = Person(name='Jane Doe', email='jane.doe@example.com')
         db.session.add(self.person)
-        db.session.commit()  # Commit to generate an ID for the person
+        db.session.commit()
 
         self.vehicle = Vehicle(license_plate='ABC123', brand='Toyota', color='Red', owner_id=self.person.id)
-        self.officer = Officer(name='John Doe', email='john.doe@example.com', password='password123')
         db.session.add(self.vehicle)
+        db.session.commit()
+
+        # Create officer and generate token for authentication
+        self.officer = Officer(
+            name='John Doe',
+            badge_number='12345',
+            api_key=create_access_token(identity='12345')
+        )
         db.session.add(self.officer)
         db.session.commit()
 
-        # Generate token for authentication
-        self.token = 'Bearer ' + create_access_token(identity=self.officer.id)
+        self.token = 'Bearer ' + self.officer.api_key
 
     def tearDown(self):
         """Tear down test variables."""
@@ -38,9 +45,9 @@ class InfractionApiTestCase(unittest.TestCase):
     def test_create_infraction(self):
         """Test creating an infraction via API."""
         infraction_data = {
-            "placa_patente": "ABC123",
+            "license_plate": "ABC123",
             "timestamp": datetime.fromisoformat("2024-07-06T10:00:00"),
-            "comentarios": "Speeding"
+            "comments": "Speeding"
         }
 
         response = self.client().post(
@@ -50,7 +57,7 @@ class InfractionApiTestCase(unittest.TestCase):
             content_type='application/json'
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         self.assertIn('Infraction created successfully', str(response.data))
 
         # Verify infraction in database

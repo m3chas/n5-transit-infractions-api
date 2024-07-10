@@ -4,6 +4,7 @@ from app.models import Person, Vehicle, Infraction, Officer
 from flask_jwt_extended import create_access_token
 import json
 from datetime import datetime
+from werkzeug.security import generate_password_hash
 
 class ReportApiTestCase(unittest.TestCase):
     def setUp(self):
@@ -15,16 +16,28 @@ class ReportApiTestCase(unittest.TestCase):
 
         # Set initial data for testing purposes
         self.person = Person(name="John Doe", email="john.doe@example.com")
-        self.vehicle = Vehicle(license_plate="ABC123", brand="Toyota", color="Red", owner_id=1)
-        self.officer = Officer(name="Jane Smith", email="jane.smith@example.com", password="password123")
+        db.session.add(self.person)
+        db.session.commit()
+
+        self.vehicle = Vehicle(license_plate="ABC123", brand="Toyota", color="Red", owner_id=self.person.id)
+        db.session.add(self.vehicle)
+        db.session.commit()
+
+        self.officer = Officer(
+            name="Jane Smith",
+            badge_number="12345",
+            api_key=create_access_token(identity='12345')
+        )
+        db.session.add(self.officer)
+        db.session.commit()
+
         self.infraction = Infraction(
             license_plate="ABC123", 
             timestamp=datetime.fromisoformat("2024-07-06T10:00:00"), 
             comments="Speeding", 
-            officer_id=1
+            officer_id=self.officer.id
         )
-        
-        db.session.add_all([self.person, self.vehicle, self.officer, self.infraction])
+        db.session.add(self.infraction)
         db.session.commit()
 
     def tearDown(self):

@@ -1,47 +1,30 @@
-from flask import Blueprint, request, jsonify
-from app import db
-from app.models import Infraction, Vehicle, Officer
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from datetime import datetime
+from flask import Blueprint, request
+from flask_restful import Api, Resource
+from marshmallow import ValidationError
+from app.schemas.infraction_schema import InfractionSchema
+from app.controllers.infraction_controller import InfractionController
+from app.models import Vehicle
+from app.auth.decorators import officer_required
 
 bp = Blueprint('infractions', __name__, url_prefix='/api')
+api = Api(bp)
 
-@bp.route('/cargar_infraccion', methods=['POST'])
-@jwt_required()
-def cargar_infraccion():
-    data = request.get_json()
+infraction_schema = InfractionSchema()
 
-    if not data:
-        return jsonify({"error": "No input data provided"}), 400
+class InfractionResource(Resource):
+    @officer_required
+    def post(self):
+        data = request.get_json()
+        try:
+            validated_data = infraction_schema.load(data)
+        except ValidationError as err:
+            return {"errors": err.messages}, 422
 
-    license_plate = data.get('placa_patente')
-    timestamp_str = data.get('timestamp')
-    comments = data.get('comentarios')
+        vehicle = Vehicle.query.filter_by(license_plate=validated_data['license_plate']).first()
+        if not vehicle:
+            return {"error": "Vehicle not found"}, 404
+        
+        infraction = InfractionController.create_infraction(validated_data, request.officer.id)
+        return {"message": "Infraction created successfully", "data": infraction_schema.dump(infraction)}, 201
 
-    if not license_plate or not timestamp_str or not comments:
-        return jsonify({"error": "Missing required fields"}), 422
-
-    vehicle = Vehicle.query.filter_by(license_plate=license_plate).first()
-    if not vehicle:
-        return jsonify({"error": "Vehicle not found"}), 404
-
-    try:
-        timestamp = datetime.fromisoformat(timestamp_str)
-    except ValueError:
-        return jsonify({"error": "Invalid timestamp format"}), 422
-
-    officer_id = get_jwt_identity()
-    officer = Officer.query.filter_by(id=officer_id).first()
-    if not officer:
-        return jsonify({"error": "Officer not found"}), 404
-
-    infraction = Infraction(
-        license_plate=license_plate,
-        timestamp=timestamp,
-        comments=comments,
-        officer_id=officer.id
-    )
-    db.session.add(infraction)
-    db.session.commit()
-
-    return jsonify({"message": "Infraction created successfully"}), 200
+api.add_resource(InfractionResource, '/cargar_infraccion')

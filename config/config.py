@@ -5,6 +5,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data.sqlite')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'n5_jwt_secret')
+    JWT_ACCESS_TOKEN_EXPIRES = 86400
 
 class TestingConfig(Config):
     TESTING = True

@@ -1,9 +1,10 @@
 from app.extensions import db
 
 class Officer(db.Model):
-    __tablename__ = 'officer'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
-    infractions = db.relationship('Infraction', backref='officer', lazy=True)
+    badge_number = db.Column(db.String(50), unique=True, nullable=False)
+    api_key = db.Column(db.Text, unique=True, nullable=False)
+
+    def __repr__(self):
+        return f'<Officer {self.name}>'
